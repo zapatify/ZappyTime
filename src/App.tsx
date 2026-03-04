@@ -70,6 +70,15 @@ export default function App() {
     );
   };
 
+  const handleReorderProjects = (fromIndex: number, toIndex: number) => {
+    setProjects((prev) => {
+      const updated = [...prev];
+      const [moved] = updated.splice(fromIndex, 1);
+      updated.splice(toIndex, 0, moved);
+      return updated;
+    });
+  };
+
   const handleDeleteProject = (id: string) => {
     setProjects((prev) => prev.filter((project) => project.id !== id));
     if (selectedProjectId === id) {
@@ -120,6 +129,7 @@ export default function App() {
             onAddProject={handleAddProject}
             onEditProject={handleEditProject}
             onDeleteProject={handleDeleteProject}
+            onReorderProjects={handleReorderProjects}
           />
         </div>
       </div>

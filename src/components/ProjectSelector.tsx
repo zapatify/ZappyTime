@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Plus, Clock, Check, X, Pencil, Trash2 } from "lucide-react";
+import { useState, useRef } from "react";
+import { Plus, Clock, Check, X, Pencil, Trash2, GripVertical } from "lucide-react";
 
 export interface Project {
   id: string;
@@ -15,6 +15,7 @@ interface ProjectSelectorProps {
   onAddProject: (name: string) => void;
   onEditProject: (projectId: string, name: string) => void;
   onDeleteProject: (projectId: string) => void;
+  onReorderProjects: (fromIndex: number, toIndex: number) => void;
 }
 
 export function ProjectSelector({
@@ -24,11 +25,14 @@ export function ProjectSelector({
   onAddProject,
   onEditProject,
   onDeleteProject,
+  onReorderProjects,
 }: ProjectSelectorProps) {
   const [isAddingProject, setIsAddingProject] = useState(false);
   const [newProjectName, setNewProjectName] = useState("");
   const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
   const [editedName, setEditedName] = useState("");
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const dragIndexRef = useRef<number | null>(null);
 
   const handleAddProject = () => {
     if (newProjectName.trim()) {
@@ -80,8 +84,34 @@ export function ProjectSelector({
     <div className="w-full max-w-2xl">
       <h2 className="text-2xl mb-4 text-white font-medium">Select Project</h2>
       <div className="space-y-2">
-        {projects.map((project) => (
-          <div key={project.id}>
+        {projects.map((project, index) => (
+          <div
+            key={project.id}
+            draggable={editingProjectId !== project.id}
+            onDragStart={(e) => {
+              dragIndexRef.current = index;
+              e.dataTransfer.effectAllowed = "move";
+            }}
+            onDragOver={(e) => {
+              e.preventDefault();
+              e.dataTransfer.dropEffect = "move";
+              setDragOverIndex(index);
+            }}
+            onDragLeave={() => setDragOverIndex(null)}
+            onDrop={(e) => {
+              e.preventDefault();
+              setDragOverIndex(null);
+              if (dragIndexRef.current !== null && dragIndexRef.current !== index) {
+                onReorderProjects(dragIndexRef.current, index);
+              }
+              dragIndexRef.current = null;
+            }}
+            onDragEnd={() => {
+              setDragOverIndex(null);
+              dragIndexRef.current = null;
+            }}
+            className={dragOverIndex === index ? "opacity-50" : ""}
+          >
             {editingProjectId === project.id ? (
               <div className="w-full p-4 rounded-lg border-2 border-blue-500 bg-gray-700/50 flex items-center gap-2">
                 <div
@@ -116,6 +146,9 @@ export function ProjectSelector({
               </div>
             ) : (
               <div className="flex items-center gap-2">
+                <div className="cursor-grab active:cursor-grabbing text-gray-500 hover:text-gray-300 transition-colors">
+                  <GripVertical className="size-5" />
+                </div>
                 <button
                   onClick={() => onSelectProject(project.id)}
                   className={`flex-1 p-4 rounded-lg border-2 transition-all flex items-center justify-between cursor-pointer ${
